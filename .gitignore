@@ -1,4 +1,5 @@
 *.pyc
+*.pyo
 /data/
 /_source/
 .project
