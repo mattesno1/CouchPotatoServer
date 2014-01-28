@@ -944,6 +944,7 @@
 			display: inline-block;
 			margin: 0 0 0 16px;
 		}
+			.movies .alph_nav .mass_edit_form .category select,
 			.movies .alph_nav .mass_edit_form .quality select {
 				width: 120px;
 				margin-right: 5px;
@@ -952,6 +953,7 @@
 				padding: 3px 7px;
 			}
 
+		.movies .alph_nav .mass_edit_form .category,
 		.movies .alph_nav .mass_edit_form .refresh,
 		.movies .alph_nav .mass_edit_form .delete {
 			display: inline-block;

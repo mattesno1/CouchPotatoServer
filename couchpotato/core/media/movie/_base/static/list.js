@@ -203,9 +203,18 @@ var MovieList = new Class({
 				new Element('div.quality').adopt(
 					self.mass_edit_quality = new Element('select'),
 					new Element('a.button.orange', {
-						'text': 'Change quality',
+						'text': 'Set Quality',
 						'events': {
 							'click': self.changeQualitySelected.bind(self)
+						}
+					})
+				),
+				self.mass_edit_category_container = new Element('div.category').adopt(
+					self.mass_edit_category = new Element('select'),
+					new Element('a.button.orange', {
+						'text': 'Set Category',
+						'events': {
+							'click': self.changeCategorySelected.bind(self)
 						}
 					})
 				),
@@ -263,6 +272,22 @@ var MovieList = new Class({
 				'text': profile.label ? profile.label : profile.data.label
 			}).inject(self.mass_edit_quality)
 		});
+		
+		var categories = CategoryList.getAll();
+		if (categories.length == 0) {
+			self.mass_edit_category_container.setStyle('display', 'none')
+		} else {
+			new Element('option', {
+				'value': -1,
+				'text': 'None'
+			}).inject(self.mass_edit_category)
+			categories.each(function(category){
+				new Element('option', {
+					'value': category.id ? category.id : category.data.id,
+					'text': category.label ? category.label : category.data.label
+				}).inject(self.mass_edit_category)
+			});
+		};
 
 		self.filter_menu.addLink(
 			self.navigation_search_input = new Element('input', {
@@ -416,6 +441,19 @@ var MovieList = new Class({
 			'data': {
 				'id': ids.join(','),
 				'profile_id': self.mass_edit_quality.get('value')
+			},
+			'onSuccess': self.search.bind(self)
+		});
+	},
+
+	changeCategorySelected: function(){
+		var self = this;
+		var ids = self.getSelectedMovies()
+
+		Api.request('movie.edit', {
+			'data': {
+				'id': ids.join(','),
+				'category_id': self.mass_edit_category.get('value')
 			},
 			'onSuccess': self.search.bind(self)
 		});

@@ -163,7 +163,9 @@ class MovieBase(MovieTypeBase):
             if not m:
                 continue
 
-            m.profile_id = kwargs.get('profile_id')
+            prof_id = kwargs.get('profile_id')
+            if prof_id is not None:
+                m.profile_id = prof_id
 
             cat_id = kwargs.get('category_id')
             if cat_id is not None:
