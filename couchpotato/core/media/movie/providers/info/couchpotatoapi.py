@@ -40,8 +40,13 @@ class CouchPotatoApi(MovieProvider):
 
         addEvent('release.validate', self.validate)
 
+        addEvent('cp.api_call', self.call)
+
         addEvent('cp.source_url', self.getSourceUrl)
         addEvent('cp.messages', self.getMessages)
+
+    def call(self, url, **kwargs):
+        return self.getJsonData(url, headers = self.getRequestHeaders(), **kwargs)
 
     def getMessages(self, last_check = 0):
 
@@ -69,12 +74,15 @@ class CouchPotatoApi(MovieProvider):
         name_enc = base64.b64encode(ss(name))
         return self.getJsonData(self.urls['validate'] % name_enc, headers = self.getRequestHeaders())
 
-    def isMovie(self, identifier = None):
+    def isMovie(self, identifier = None, adding = False):
 
         if not identifier:
             return
 
-        data = self.getJsonData(self.urls['is_movie'] % identifier, headers = self.getRequestHeaders())
+        url = self.urls['is_movie'] % identifier
+        url += '?adding=1' if adding else ''
+
+        data = self.getJsonData(url, headers = self.getRequestHeaders())
         if data:
             return data.get('is_movie', True)
 

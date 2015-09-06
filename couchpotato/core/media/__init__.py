@@ -1,9 +1,10 @@
 import os
 import traceback
 
-from couchpotato import CPLog
+from couchpotato import CPLog, md5
 from couchpotato.core.event import addEvent, fireEvent, fireEventAsync
 from couchpotato.core.helpers.encoding import toUnicode
+from couchpotato.core.helpers.variable import getExt
 from couchpotato.core.plugins.base import Plugin
 import six
 
@@ -87,12 +88,25 @@ class MediaBase(Plugin):
         if len(existing_files) == 0:
             del existing_files[file_type]
 
+        images = image_urls.get(image_type, [])
+        for y in ['SX300', 'tmdb']:
+            initially_try = [x for x in images if y in x]
+            images[:-1] = initially_try
+
         # Loop over type
-        for image in image_urls.get(image_type, []):
+        for image in images:
             if not isinstance(image, (str, unicode)):
                 continue
 
-            if file_type not in existing_files or len(existing_files.get(file_type, [])) == 0:
+            # Check if it has top image
+            filename = '%s.%s' % (md5(image), getExt(image))
+            existing = existing_files.get(file_type, [])
+            has_latest = False
+            for x in existing:
+                if filename in x:
+                    has_latest = True
+
+            if not has_latest or file_type not in existing_files or len(existing_files.get(file_type, [])) == 0:
                 file_path = fireEvent('file.download', url = image, single = True)
                 if file_path:
                     existing_files[file_type] = [toUnicode(file_path)]

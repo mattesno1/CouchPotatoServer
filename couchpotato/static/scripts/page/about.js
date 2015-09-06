@@ -6,7 +6,7 @@ var AboutSettingTab = new Class({
 	initialize: function(){
 		var self = this;
 
-		App.addEvent('loadSettings', self.addSettings.bind(self))
+		App.addEvent('loadSettings', self.addSettings.bind(self));
 
 	},
 
@@ -48,13 +48,13 @@ var AboutSettingTab = new Class({
 					'text': 'Getting version...',
 					'events': {
 						'click': App.checkForUpdate.bind(App, function(json){
-							self.fillVersion(json.info)
+							self.fillVersion(json.info);
 						}),
 						'mouseenter': function(){
-							this.set('text', 'Check for updates')
+							this.set('text', 'Check for updates');
 						},
 						'mouseleave': function(){
-							self.fillVersion(Updater.getInfo())
+							self.fillVersion(Updater.getInfo());
 						}
 					}
 				}),
@@ -96,11 +96,11 @@ var AboutSettingTab = new Class({
 					'text': '. For as low as $7.95 per month, you’ll get:'
 				}),
 				new Element('ul').adopt(
-					new Element('li', {
+					new Element('li.icon-ok', {
 						'text': Math.ceil((today.getTime()-millennium.getTime())/(one_day))+" days retention"
 					}),
-					new Element('li[text=No speed or download limits]'),
-					new Element('li[text=Free SSL Encrypted connections]')
+					new Element('li.icon-ok[text=No speed or download limits]'),
+					new Element('li.icon-ok[text=Free SSL Encrypted connections]')
 				)
 			),
 			new Element('div.donate', {
@@ -117,7 +117,7 @@ var AboutSettingTab = new Class({
 		var self = this;
 		var date = new Date(json.version.date * 1000);
 		self.version_text.set('text', json.version.hash + (json.version.date ? ' ('+date.toLocaleString()+')' : ''));
-		self.updater_type.set('text', json.version.type + ', ' + json.branch);
+		self.updater_type.set('text', (json.version.type != json.branch) ? (json.version.type + ', ' + json.branch) : json.branch);
 	}
 
 });

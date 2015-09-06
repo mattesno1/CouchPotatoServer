@@ -35,6 +35,7 @@ class Renamer(Plugin):
             'desc': 'For the renamer to check for new files to rename in a folder',
             'params': {
                 'async': {'desc': 'Optional: Set to 1 if you dont want to fire the renamer.scan asynchronous.'},
+                'to_folder': {'desc': 'Optional: The folder to move releases to. Leave empty for default folder.'},
                 'media_folder': {'desc': 'Optional: The folder of the media to scan. Keep empty for default renamer folder.'},
                 'files': {'desc': 'Optional: Provide the release files if more releases are in the same media_folder, delimited with a \'|\'. Note that no dedicated release folder is expected for releases with one file.'},
                 'base_folder': {'desc': 'Optional: The folder to find releases in. Leave empty for default folder.'},
@@ -42,6 +43,13 @@ class Renamer(Plugin):
                 'download_id': {'desc': 'Optional: The nzb/torrent ID of the release in media_folder. \'downloader\' is required with this option.'},
                 'status': {'desc': 'Optional: The status of the release: \'completed\' (default) or \'seeding\''},
             },
+        })
+
+        addApiView('renamer.progress', self.getProgress, docs = {
+            'desc': 'Get the progress of current renamer scan',
+            'return': {'type': 'object', 'example': """{
+    'progress': False || True,
+}"""},
         })
 
         addEvent('renamer.scan', self.scan)
@@ -67,11 +75,17 @@ class Renamer(Plugin):
 
         return True
 
+    def getProgress(self, **kwargs):
+        return {
+            'progress': self.renaming_started
+        }
+
     def scanView(self, **kwargs):
 
         async = tryInt(kwargs.get('async', 0))
         base_folder = kwargs.get('base_folder')
         media_folder = sp(kwargs.get('media_folder'))
+        to_folder = kwargs.get('to_folder')
 
         # Backwards compatibility, to be removed after a few versions :)
         if not media_folder:
@@ -95,13 +109,13 @@ class Renamer(Plugin):
                 })
 
         fire_handle = fireEvent if not async else fireEventAsync
-        fire_handle('renamer.scan', base_folder = base_folder, release_download = release_download)
+        fire_handle('renamer.scan', base_folder = base_folder, release_download = release_download, to_folder = to_folder)
 
         return {
             'success': True
         }
 
-    def scan(self, base_folder = None, release_download = None):
+    def scan(self, base_folder = None, release_download = None, to_folder = None):
         if not release_download: release_download = {}
 
         if self.isDisabled():
@@ -115,7 +129,9 @@ class Renamer(Plugin):
             base_folder = sp(self.conf('from'))
 
         from_folder = sp(self.conf('from'))
-        to_folder = sp(self.conf('to'))
+
+        if not to_folder:
+            to_folder = sp(self.conf('to'))
 
         # Get media folder to process
         media_folder = sp(release_download.get('folder'))
@@ -869,7 +885,9 @@ Remove it if you want it to be renamed (again, or at least let it try again)
                 #If information is not available, we don't want the tag in the filename
                 replaced = replaced.replace('<' + x + '>', '')
 
-        replaced = self.replaceDoubles(replaced.lstrip('. '))
+        if self.conf('replace_doubles'):
+            replaced = self.replaceDoubles(replaced.lstrip('. '))
+
         for x, r in replacements.items():
             if x in ['thename', 'namethe']:
                 replaced = replaced.replace(six.u('<%s>') % toUnicode(x), toUnicode(r))
@@ -948,6 +966,7 @@ Remove it if you want it to be renamed (again, or at least let it try again)
 
             try:
                 for rel in rels:
+                    if not rel.get('media_id'): continue
                     movie_dict = db.get('id', rel.get('media_id'))
                     download_info = rel.get('download_info')
 
@@ -1184,7 +1203,10 @@ Remove it if you want it to be renamed (again, or at least let it try again)
 
             log.info('Archive %s found. Extracting...', os.path.basename(archive['file']))
             try:
-                rar_handle = RarFile(archive['file'], custom_path = self.conf('unrar_path'))
+                unrar_path = self.conf('unrar_path')
+                unrar_path = unrar_path if unrar_path and (os.path.isfile(unrar_path) or re.match('^[a-zA-Z0-9_/\.\-]+$', unrar_path)) else None
+
+                rar_handle = RarFile(archive['file'], custom_path = unrar_path)
                 extr_path = os.path.join(from_folder, os.path.relpath(os.path.dirname(archive['file']), folder))
                 self.makeDir(extr_path)
                 for packedinfo in rar_handle.infolist():
@@ -1308,7 +1330,7 @@ config = [{
                 {
                     'name': 'to',
                     'type': 'directory',
-                    'description': 'Default folder where the movies are moved to.',
+                    'description': 'Default folder where the movies are moved/copied/linked to.',
                 },
                 {
                     'name': 'folder_name',
@@ -1325,6 +1347,14 @@ config = [{
                     'default': '<thename><cd>.<ext>',
                     'type': 'choice',
                     'options': rename_options
+                },
+                {
+                    'advanced': True,
+                    'name': 'replace_doubles',
+                    'type': 'bool',
+                    'label': 'Clean Name',
+                    'description': ('Attempt to clean up double separaters due to missing data for fields.','Sometimes this eliminates wanted white space (see <a href="https://github.com/RuudBurger/CouchPotatoServer/issues/2782">#2782</a>).'),
+                    'default': True
                 },
                 {
                     'name': 'unrar',
@@ -1418,7 +1448,7 @@ config = [{
                     'default': 'link',
                     'type': 'dropdown',
                     'values': [('Link', 'link'), ('Copy', 'copy'), ('Move', 'move')],
-                    'description': 'See above. It is prefered to use link when downloading torrents as it will save you space, while still beeing able to seed.',
+                    'description': 'See above. It is prefered to use link when downloading torrents as it will save you space, while still being able to seed.',
                     'advanced': True,
                 },
                 {
